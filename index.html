@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>✧ Bubble Pop Game</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: linear-gradient(135deg, #6B46C1 0%, #3B82F6 50%, #1E40AF 100%);
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Game UI Styles with animations */
+    #gameUI {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+      animation: slideInFromTop 0.8s ease-out;
+    }
+    
+    @keyframes slideInFromTop {
+      0% { transform: translateY(-100%); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    
+    #gameStats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #E0E7FF;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      pointer-events: none;
+    }
+    
+    #gameStats span {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 5px 10px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+    }
+    
+    #gameStats span:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+    
+    #gameControls {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    
+    #homeButton {
+      background: rgba(255, 255, 255, 0.95);
+      border: none;
+      border-radius: 12px;
+      width: 50px;
+      height: 50px;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    #homeButton:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    
+    #homeButton:active {
+      transform: scale(0.95);
+    }
+    
+    #homeButton::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transition: left 0.5s;
+    }
+    
+    #homeButton:hover::before {
+      left: 100%;
+    }
+    
+    /* Enhanced Camera Feed */
+    #cameraContainer {
+      width: 120px;
+      height: 90px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      margin-top: 10px;
+      transition: all 0.3s ease;
+    }
+    
+    #cameraContainer:hover {
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+    
+    #cameraVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    
+    #cameraCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    
+    /* Enhanced Tracking Status */
+    #trackingStatus {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff4444;
+      transition: all 0.3s ease;
+    }
+    
+    #trackingStatus.active {
+      background: #44ff44;
+      box-shadow: 0 0 12px #44ff44;
+      animation: pulse 2s infinite;
+    }
+    
+    #trackingStatus.detecting {
+      background: #ffaa00;
+      animation: searching 1s infinite;
+    }
+    
+    /* Gesture Display */
+    #gestureDisplay {
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      right: 2px;
+      font-size: 8px;
+      color: white;
+      background: rgba(0,0,0,0.7);
+      padding: 2px 4px;
+      border-radius: 4px;
+      text-align: center;
+      backdrop-filter: blur(5px);
+    }
+    
+    /* Performance indicator */
+    #performanceIndicator {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 8px;
+      color: white;
+      background: rgba(0,0,0,0.5);
+      padding: 1px 3px;
+      border-radius: 3px;
+    }
+    
+    /* Menu Styles with enhanced animations */
+    #menuOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #6B46C1 0%, #3B82F6 50%, #1E40AF 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    
+    #menuCard {
+      background: rgba(30, 41, 59, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 400px;
+      animation: slideInFromBottom 0.8s ease-out;
+    }
+    
+    @keyframes slideInFromBottom {
+      0% { transform: translateY(100px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    
+    #menuTitle {
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(45deg, #60A5FA, #34D399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      animation: glow 3s ease-in-out infinite alternate;
+    }
+    
+    @keyframes glow {
+      0% { filter: drop-shadow(0 0 5px rgba(96, 165, 250, 0.5)); }
+      100% { filter: drop-shadow(0 0 20px rgba(52, 211, 153, 0.8)); }
+    }
+    
+    #menuSubtitle {
+      color: #94A3B8;
+      font-size: clamp(0.9rem, 4vw, 1.1rem);
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    
+    #highScoreDisplay {
+      color: #FCD34D;
+      font-size: clamp(1rem, 4vw, 1.1rem);
+      font-weight: 600;
+      margin-bottom: 25px;
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
+    }
+    
+    .menu-button {
+      display: block;
+      width: 100%;
+      padding: 16px 20px;
+      margin: 12px 0;
+      font-size: clamp(16px, 4vw, 18px);
+      font-weight: 600;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      min-height: 50px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .menu-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .menu-button:hover::before {
+      left: 100%;
+    }
+    
+    .menu-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    .menu-button:active {
+      transform: scale(0.95);
+    }
+    
+    .levels-btn {
+      background: linear-gradient(135deg, #EC4899, #BE185D);
+      color: white;
+    }
+    
+    .freestyle-btn {
+      background: linear-gradient(135deg, #06B6D4, #0891B2);
+      color: white;
+    }
+    
+    .timer-btn {
+      background: linear-gradient(135deg, #F97316, #EA580C);
+      color: white;
+    }
+    
+    /* Canvas */
+    canvas#gameCanvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: transparent;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+    
+    /* Enhanced Hand Tracking Cursor - SIMPLIFIED */
+    .hand-cursor {
+      width: 30px;
+      height: 30px;
+      background: radial-gradient(circle, #FFD700 0%, #FFA500 70%, #FF8C00 100%);
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      box-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.8),
+        0 0 40px rgba(255, 215, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3);
+      display: none;
+      transform-origin: center;
+      transition: none;
+    }
+    
+    .hand-cursor::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      border-radius: 50%;
+      animation: cursorPulse 2s infinite;
+    }
+    
+    .hand-cursor::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 4px;
+      background: white;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+    }
+    
+    @keyframes cursorPulse {
+      0%, 100% { 
+        transform: scale(1); 
+        opacity: 0.7; 
+      }
+      50% { 
+        transform: scale(1.2); 
+        opacity: 0.3; 
+      }
+    }
+    
+    .hand-cursor.lost {
+      opacity: 0.6;
+      animation: searching 1.5s infinite;
+      filter: grayscale(0.5);
+    }
+    
+    .hand-cursor.gesture-peace {
+      background: radial-gradient(circle, #00FF7F 0%, #32CD32 70%, #228B22 100%);
+      animation: gestureGlow 1s infinite alternate;
+    }
+    
+    .hand-cursor.gesture-three {
+      background: radial-gradient(circle, #FF69B4 0%, #FF1493 70%, #DC143C 100%);
+      animation: gestureGlow 1s infinite alternate;
+    }
+    
+    .hand-cursor.gesture-fist {
+      background: radial-gradient(circle, #8A2BE2 0%, #9400D3 70%, #4B0082 100%);
+      animation: gestureGlow 1s infinite alternate;
+    }
+    
+    @keyframes gestureGlow {
+      0% { box-shadow: 0 0 20px currentColor; }
+      100% { box-shadow: 0 0 40px currentColor; }
+    }
+    
+    /* Cursor Trail Effect - REDUCED */
+    .cursor-trail {
+      position: fixed;
+      width: 6px;
+      height: 6px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.6), transparent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      animation: trailFade 0.6s ease-out forwards;
+    }
+    
+    @keyframes trailFade {
+      0% { 
+        opacity: 1; 
+        transform: scale(1); 
+      }
+      100% { 
+        opacity: 0; 
+        transform: scale(0.2); 
+      }
+    }
+    
+    /* Regular Cursor - Desktop Only */
+    .cursor {
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9998;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+      display: none;
+    }
+    
+    /* Enhanced Touch feedback */
+    .touch-ripple {
+      position: fixed;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.6), rgba(255, 165, 0, 0.3), transparent);
+      pointer-events: none;
+      z-index: 9997;
+      animation: ripple 0.8s ease-out;
+    }
+    
+    @keyframes ripple {
+      0% {
+        transform: scale(0);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(6);
+        opacity: 0;
+      }
+    }
+    
+    /* Gesture Recognition Display */
+    #gestureInfo {
+      position: fixed;
+      top: 50%;
+      left: 20px;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 12px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: none;
+      z-index: 1001;
+      animation: slideInFromLeft 0.5s ease-out;
+    }
+    
+    @keyframes slideInFromLeft {
+      0% { transform: translateY(-50%) translateX(-100%); opacity: 0; }
+      100% { transform: translateY(-50%) translateX(0); opacity: 1; }
+    }
+    
+    /* Animations */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+    
+    @keyframes searching {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      #gameStats {
+        font-size: 12px;
+        gap: 8px;
+      }
+      
+      #gameStats span {
+        white-space: nowrap;
+        font-size: 11px;
+        padding: 3px 8px;
+      }
+      
+      #homeButton {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+      }
+      
+      #cameraContainer {
+        width: 100px;
+        height: 75px;
+      }
+      
+      .hand-cursor {
+        width: 35px;
+        height: 35px;
+      }
+      
+      #menuCard {
+        padding: 25px 20px;
+        margin: 10px;
+      }
+      
+      .menu-button {
+        padding: 14px 16px;
+        margin: 10px 0;
+        min-height: 48px;
+      }
+      
+      #gestureInfo {
+        left: 10px;
+        font-size: 10px;
+        padding: 10px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      #gameUI {
+        padding: 8px 12px;
+      }
+      
+      #gameStats {
+        font-size: 10px;
+        gap: 6px;
+      }
+      
+      #homeButton {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+      
+      #cameraContainer {
+        width: 80px;
+        height: 60px;
+      }
+      
+      .hand-cursor {
+        width: 40px;
+        height: 40px;
+      }
+      
+      #menuCard {
+        padding: 20px 15px;
+      }
+    }
+    
+    /* Desktop cursor */
+    @media (hover: hover) and (pointer: fine) {
+      html, body {
+        cursor: none;
+      }
+      
+      .cursor {
+        display: block;
+      }
+      
+      button:hover {
+        cursor: pointer;
+      }
+    }
+
+    @keyframes slideInFromRight {
+      0% { transform: translateX(100%); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="cursor" id="customCursor"></div>
+  <div class="hand-cursor" id="handCursor"></div>
+  
+  <!-- Gesture Information Panel -->
+  <div id="gestureInfo">
+    <div><strong>Current Gesture:</strong> <span id="currentGesture">None</span></div>
+    <div><strong>FPS:</strong> <span id="fpsDisplay">--</span></div>
+    <div><strong>Confidence:</strong> <span id="confidenceDisplay">--</span></div>
+    <hr style="margin: 8px 0; border-color: rgba(255,255,255,0.3);">
+    <div style="font-size: 10px;">
+      <div>👆 Index: Move cursor</div>
+      <div>✌️ Peace: Special effect</div>
+      <div>🤟 Three: Power mode</div>
+      <div>✊ Fist: Reset</div>
+      <div style="color: #FCD34D; margin-top: 5px;">Use touch/mouse to click!</div>
+    </div>
+  </div>
+  
+  <!-- Menu Overlay -->
+  <div id="menuOverlay">
+    <div id="menuCard">
+      <h1 id="menuTitle">✧ Bubble Pop</h1>
+      <p id="menuSubtitle">Move with hands, click with touch/mouse!</p>
+      <div id="highScoreDisplay">🏆 High Score: 0</div>
+      <button class="menu-button levels-btn" onclick="startGame('level')">🎯 Levels Mode</button>
+      <button class="menu-button freestyle-btn" onclick="startGame('freestyle')">🌀 Freestyle Mode</button>
+      <button class="menu-button timer-btn" onclick="startGame('timer')">⏱️ Timer Mode</button>
+      <button class="menu-button" onclick="toggleGestureInfo()" style="background: linear-gradient(135deg, #8B5CF6, #6366F1); margin-top: 20px;">
+        📊 Show Gesture Info
+      </button>
+    </div>
+  </div>
+  
+  <!-- Game UI -->
+  <div id="gameUI" style="display: none;">
+    <div id="gameStats">
+      <span id="score">Score: 0</span>
+      <span id="level">Level: 1</span>
+      <span id="time">Time: ∞</span>
+      <span id="highScore">🏆 High: 0</span>
+    </div>
+    <div id="gameControls">
+      <button id="homeButton" onclick="goHome()">🏠</button>
+      <div id="cameraContainer">
+        <video id="cameraVideo" autoplay muted playsinline></video>
+        <canvas id="cameraCanvas"></canvas>
+        <div id="trackingStatus"></div>
+        <div id="performanceIndicator">FPS: --</div>
+        <div id="gestureDisplay">No gesture</div>
+      </div>
+    </div>
+  </div>
+  
+  <canvas id="gameCanvas"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+  <script>
+    // Device detection
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                     ('ontouchstart' in window) || 
+                     (navigator.maxTouchPoints > 0);
+    
+    // Game variables
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const levelEl = document.getElementById("level");
+    const timeEl = document.getElementById("time");
+    const highScoreEl = document.getElementById("highScore");
+    const highScoreDisplayEl = document.getElementById("highScoreDisplay");
+    const cursor = document.getElementById("customCursor");
+    const handCursor = document.getElementById("handCursor");
+    const menuOverlay = document.getElementById("menuOverlay");
+    const gameUI = document.getElementById("gameUI");
+    const cameraVideo = document.getElementById("cameraVideo");
+    const cameraCanvas = document.getElementById("cameraCanvas");
+    const cameraCtx = cameraCanvas.getContext("2d");
+    const trackingStatus = document.getElementById("trackingStatus");
+    const performanceIndicator = document.getElementById("performanceIndicator");
+    const gestureDisplay = document.getElementById("gestureDisplay");
+    const gestureInfo = document.getElementById("gestureInfo");
+    const currentGestureEl = document.getElementById("currentGesture");
+    const fpsDisplayEl = document.getElementById("fpsDisplay");
+    const confidenceDisplayEl = document.getElementById("confidenceDisplay");
+
+    let bubbles = [], particles = [], score = 0, level = 1, mode = "level", isRunning = false;
+    let mouse = { x: -100, y: -100 }, timer = 60, countdown = null;
+    let hands, camera;
+    let handTrackingActive = false;
+    
+    // Enhanced tracking variables - OPTIMIZED FOR MOVEMENT ONLY
+    let prevX = window.innerWidth / 2;
+    let prevY = window.innerHeight / 2;
+    let cursorSmoothness = 2; // Further reduced for better performance
+    let currentGesture = "None";
+    let gestureConfidence = 0;
+    let fingerCount = 0;
+    
+    // FPS calculation
+    let fpsCounter = 0;
+    let fpsStartTime = performance.now();
+    let currentFps = 0;
+    
+    // Cursor trail effect - REDUCED
+    let cursorTrail = [];
+    let maxTrailLength = 4; // Reduced from 8
+    
+    // Gesture detection state - SIMPLIFIED
+    let lastGestureTime = 0;
+    let gestureStabilityFrames = 0;
+    let requiredStabilityFrames = 2; // Reduced from 3
+    
+    const colors = [
+      { main: "#EAB308", light: "#FEF08A" }, // Yellow
+      { main: "#8B5CF6", light: "#C4B5FD" }, // Purple
+      { main: "#EC4899", light: "#F9A8D4" }, // Pink
+      { main: "#06B6D4", light: "#67E8F9" }, // Cyan
+      { main: "#10B981", light: "#6EE7B7" }, // Green
+      { main: "#F97316", light: "#FDBA74" }  // Orange
+    ];
+    const highScoreKey = "bubbleHighScore";
+
+    // Simplified gesture recognition - PERFORMANCE OPTIMIZED
+    function isFingerUp(landmarks, tip, pip) {
+      return landmarks[tip].y < landmarks[pip].y;
+    }
+    
+    function getGestureName(fingers, thumbUp, fingerCount) {
+      if (fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !thumbUp) {
+        return "Index up";
+      } else if (fingers[0] && fingers[1] && !fingers[2] && !fingers[3] && !thumbUp) {
+        return "Peace sign";
+      } else if (fingers[0] && fingers[1] && fingers[2] && !fingers[3] && !thumbUp) {
+        return "Three fingers";
+      } else if (!fingers[0] && !fingers[1] && !fingers[2] && !fingers[3] && !thumbUp) {
+        return "Fist";
+      } else {
+        return `${fingerCount} fingers`;
+      }
+    }
+    
+    // Simplified cursor trail effect - PERFORMANCE OPTIMIZED
+    function addCursorTrail(x, y) {
+      // Only add trail occasionally for better performance
+      if (Math.random() < 0.05) { // Reduced from 0.1
+        const trail = document.createElement('div');
+        trail.className = 'cursor-trail';
+        trail.style.left = (x - 3) + 'px';
+        trail.style.top = (y - 3) + 'px';
+        document.body.appendChild(trail);
+        
+        setTimeout(() => {
+          if (document.body.contains(trail)) {
+            document.body.removeChild(trail);
+          }
+        }, 600);
+      }
+    }
+    
+    // Update FPS - OPTIMIZED
+    function updateFPS() {
+      fpsCounter++;
+      const currentTime = performance.now();
+      
+      if (currentTime - fpsStartTime >= 1000) {
+        currentFps = fpsCounter;
+        fpsCounter = 0;
+        fpsStartTime = currentTime;
+        
+        // Update displays
+        performanceIndicator.textContent = `${currentFps}fps`;
+        fpsDisplayEl.textContent = currentFps;
+        
+        // Adjust smoothness based on performance
+        if (currentFps < 25) {
+          cursorSmoothness = Math.min(4, cursorSmoothness + 0.5);
+        } else if (currentFps > 50) {
+          cursorSmoothness = Math.max(1, cursorSmoothness - 0.2);
+        }
+      }
+    }
+
+    // Canvas setup
+    function setupCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      
+      ctx.scale(dpr, dpr);
+      
+      // Setup camera canvas
+      cameraCanvas.width = cameraCanvas.offsetWidth;
+      cameraCanvas.height = cameraCanvas.offsetHeight;
+    }
+
+    // Initialize canvas
+    setupCanvas();
+    window.addEventListener("resize", setupCanvas);
+
+    // Hand tracking setup - OPTIMIZED FOR MOVEMENT ONLY
+    function initializeHandTracking() {
+      try {
+        hands = new Hands({
+          locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+          }
+        });
+
+        // Optimized settings for movement only
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 0, // Lowest complexity for best performance
+          minDetectionConfidence: 0.6, // Reduced for faster detection
+          minTrackingConfidence: 0.6   // Reduced for faster tracking
+        });
+
+        hands.onResults(onHandResults);
+        console.log("Hand tracking initialized for movement only");
+      } catch (error) {
+        console.error("Hand tracking initialization failed:", error);
+        handTrackingActive = false;
+      }
+    }
+
+    // Simplified hand tracking results handler - MOVEMENT ONLY
+    function onHandResults(results) {
+      updateFPS();
+      
+      // Clear camera canvas
+      cameraCtx.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height);
+      
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        
+        // Update tracking status
+        trackingStatus.classList.remove('detecting');
+        trackingStatus.classList.add('active');
+        handCursor.classList.remove('lost');
+        
+        // Draw hand landmarks - SIMPLIFIED
+        drawHandLandmarks(landmarks);
+        
+        // Simplified gesture detection for visual feedback only
+        const fingers = [
+          isFingerUp(landmarks, 8, 6),   // Index
+          isFingerUp(landmarks, 12, 10), // Middle
+          isFingerUp(landmarks, 16, 14), // Ring
+          isFingerUp(landmarks, 20, 18)  // Pinky
+        ];
+        const thumbUp = landmarks[4].x < landmarks[3].x;
+        fingerCount = fingers.filter(f => f).length;
+        const indexTip = landmarks[8];
+        
+        // Get current gesture name for display only
+        const newGesture = getGestureName(fingers, thumbUp, fingerCount);
+        
+        // Simplified gesture stability check
+        if (newGesture === currentGesture) {
+          gestureStabilityFrames++;
+        } else {
+          gestureStabilityFrames = 0;
+        }
+        
+        if (gestureStabilityFrames >= requiredStabilityFrames) {
+          currentGesture = newGesture;
+          gestureDisplay.textContent = currentGesture;
+          currentGestureEl.textContent = currentGesture;
+          
+          // Apply gesture-specific cursor effects for visual feedback
+          handCursor.className = 'hand-cursor';
+          if (currentGesture.includes("Peace")) {
+            handCursor.classList.add('gesture-peace');
+          } else if (currentGesture.includes("Three")) {
+            handCursor.classList.add('gesture-three');
+          } else if (currentGesture.includes("Fist")) {
+            handCursor.classList.add('gesture-fist');
+          }
+        }
+        
+        // OPTIMIZED CURSOR MOVEMENT - MOVEMENT ONLY
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+
+        // Fixed coordinate mapping with natural mirror movement
+        let screenX = Math.min(Math.max((1 - indexTip.x), 0), 1.0) * screenW;
+        let screenY = Math.min(Math.max(indexTip.y, 0), 1.0) * screenH;
+
+        // Minimal smoothing for best performance
+        const currX = prevX + (screenX - prevX) / cursorSmoothness;
+        const currY = prevY + (screenY - prevY) / cursorSmoothness;
+        
+        mouse.x = currX;
+        mouse.y = currY;
+        prevX = currX;
+        prevY = currY;
+        
+        // Update cursor position
+        handCursor.style.left = (mouse.x - 15) + 'px';
+        handCursor.style.top = (mouse.y - 15) + 'px';
+        handCursor.style.display = 'block';
+        
+        // Minimal cursor trail for performance
+        addCursorTrail(mouse.x, mouse.y);
+        
+        // Update confidence display
+        gestureConfidence = Math.min(100, gestureStabilityFrames * 50);
+        confidenceDisplayEl.textContent = gestureConfidence + '%';
+        
+      } else {
+        // Handle hand loss
+        trackingStatus.classList.remove('active');
+        trackingStatus.classList.add('detecting');
+        handCursor.classList.add('lost');
+        
+        currentGesture = "None";
+        gestureDisplay.textContent = "No hand detected";
+        currentGestureEl.textContent = "None";
+        confidenceDisplayEl.textContent = "0%";
+      }
+    }
+
+    // Simplified hand landmarks drawing - PERFORMANCE OPTIMIZED
+    function drawHandLandmarks(landmarks) {
+      const width = cameraCanvas.width;
+      const height = cameraCanvas.height;
+      
+      // Simplified connections - only essential ones
+      const connections = [
+        [0, 5], [5, 9], [9, 13], [13, 17], [0, 17], // Palm outline
+        [5, 6], [6, 7], [7, 8], // Index finger
+      ];
+      
+      // Simple line drawing
+      cameraCtx.strokeStyle = '#00FF7F';
+      cameraCtx.lineWidth = 2;
+      cameraCtx.beginPath();
+      
+      connections.forEach(([start, end]) => {
+        const startPoint = landmarks[start];
+        const endPoint = landmarks[end];
+        
+        cameraCtx.moveTo(startPoint.x * width, startPoint.y * height);
+        cameraCtx.lineTo(endPoint.x * width, endPoint.y * height);
+      });
+      
+      cameraCtx.stroke();
+      
+      // Only highlight index fingertip
+      const indexTip = landmarks[8];
+      const x = indexTip.x * width;
+      const y = indexTip.y * height;
+      
+      cameraCtx.fillStyle = '#FFD700';
+      cameraCtx.beginPath();
+      cameraCtx.arc(x, y, 6, 0, 2 * Math.PI);
+      cameraCtx.fill();
+    }
+
+    // Enhanced camera initialization
+    async function initializeCamera() {
+  try {
+    console.log("Checking camera permissions...");
+    
+    // Check if camera is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("Camera API not supported");
+    }
+    
+    // First, check permissions without requesting
+    try {
+      const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+      console.log("Camera permission status:", permissionStatus.state);
+      
+      if (permissionStatus.state === 'denied') {
+        showCameraPermissionDialog();
+        return;
+      }
+    } catch (permError) {
+      console.log("Permission API not supported, proceeding with camera request");
+    }
+    
+    console.log("Requesting camera access...");
+    
+    // Optimized camera constraints for performance
+    const constraints = {
+      video: {
+        width: { ideal: 320, min: 240 }, // Further reduced for performance
+        height: { ideal: 240, min: 180 }, // Further reduced for performance
+        facingMode: 'user',
+        frameRate: { ideal: 30, min: 15 }
+      }
+    };
+    
+    let stream;
+    try {
+      // Try with ideal constraints first
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (error) {
+      console.log("Ideal constraints failed, trying basic constraints...");
+      // Fallback to basic constraints
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' }
+      });
+    }
+    
+    console.log("Camera access granted successfully!");
+    
+    cameraVideo.srcObject = stream;
+    
+    // Enhanced video setup with timeout
+    const videoLoadPromise = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error("Video loading timeout"));
+      }, 10000); // 10 second timeout
+      
+      cameraVideo.onloadedmetadata = () => {
+        clearTimeout(timeout);
+        console.log("Video metadata loaded successfully");
+        resolve();
+      };
+      
+      cameraVideo.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error("Video loading error"));
+      };
+    });
+    
+    await videoLoadPromise;
+    
+    // Initialize hand tracking
+    handTrackingActive = true;
+    initializeHandTracking();
+    
+    // Start camera processing
+    if (typeof Camera !== 'undefined') {
+      camera = new Camera(cameraVideo, {
+        onFrame: async () => {
+          if (hands && handTrackingActive) {
+            try {
+              await hands.send({ image: cameraVideo });
+            } catch (error) {
+              console.error("Hand tracking processing error:", error);
+            }
+          }
+        },
+        width: 320, // Reduced for performance
+        height: 240  // Reduced for performance
+      });
+      camera.start();
+      console.log("Camera started with performance-optimized settings");
+    } else {
+      console.log("Camera class not available, using fallback processing");
+      processVideoFrameEnhanced();
+    }
+    
+    // Hide any error messages
+    hideCameraError();
+    
+  } catch (error) {
+    console.error('Camera initialization failed:', error);
+    handleCameraError(error);
+  }
+}
+
+// Show camera permission dialog
+function showCameraPermissionDialog() {
+  const dialog = document.createElement('div');
+  dialog.id = 'cameraPermissionDialog';
+  dialog.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+  `;
+  
+  dialog.innerHTML = `
+    <div style="
+      background: rgba(30, 41, 59, 0.95);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      max-width: 400px;
+      margin: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    ">
+      <h2 style="color: #60A5FA; margin-bottom: 15px; font-size: 24px;">📷 Camera Access Needed</h2>
+      <p style="color: #E2E8F0; margin-bottom: 20px; line-height: 1.5;">
+        To use hand tracking for cursor movement, please allow camera access.
+      </p>
+      <div style="margin-bottom: 20px;">
+        <p style="color: #94A3B8; font-size: 14px; margin-bottom: 10px;">
+          <strong>How to enable camera:</strong>
+        </p>
+        <ul style="color: #94A3B8; font-size: 12px; text-align: left; margin: 0; padding-left: 20px;">
+          <li>Click the camera icon in your browser's address bar</li>
+          <li>Select "Allow" for camera access</li>
+          <li>Refresh the page if needed</li>
+        </ul>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button onclick="retryCamera()" style="
+          background: linear-gradient(135deg, #10B981, #059669);
+          color: white;
+          border: none;
+          padding: 12px 20px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 600;
+        ">🔄 Try Again</button>
+        <button onclick="dismissCameraDialog()" style="
+          background: linear-gradient(135deg, #6B7280, #4B5563);
+          color: white;
+          border: none;
+          padding: 12px 20px;
+          border-radius: 10px;
+          cursor: pointer;
+          font-weight: 600;
+        ">Continue Without Camera</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(dialog);
+}
+
+// Handle camera errors with user-friendly messages
+function handleCameraError(error) {
+  handTrackingActive = false;
+  trackingStatus.classList.remove('active');
+  
+  let errorMessage = "Camera access failed";
+  let suggestion = "You can still play using touch/mouse controls.";
+  
+  if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+    errorMessage = "Camera permission denied";
+    suggestion = "Please allow camera access to use hand tracking.";
+    showCameraPermissionDialog();
+    return;
+  } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+    errorMessage = "No camera found";
+    suggestion = "Please connect a camera to use hand tracking.";
+  } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+    errorMessage = "Camera is busy";
+    suggestion = "Please close other apps using the camera and try again.";
+  } else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
+    errorMessage = "Camera constraints not supported";
+    suggestion = "Your camera doesn't support the required settings.";
+  }
+  
+  showCameraError(errorMessage, suggestion);
+}
+
+// Show camera error message
+function showCameraError(message, suggestion) {
+  // Remove existing error if any
+  hideCameraError();
+  
+  const errorDiv = document.createElement('div');
+  errorDiv.id = 'cameraError';
+  errorDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    max-width: 300px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: slideInFromRight 0.5s ease-out;
+  `;
+  
+  errorDiv.innerHTML = `
+    <div style="display: flex; align-items: flex-start; gap: 10px;">
+      <span style="font-size: 20px;">⚠️</span>
+      <div style="flex: 1;">
+        <div style="font-weight: 600; margin-bottom: 5px;">${message}</div>
+        <div style="font-size: 12px; opacity: 0.9;">${suggestion}</div>
+        <button onclick="retryCamera()" style="
+          background: rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 5px 10px;
+          border-radius: 5px;
+          font-size: 11px;
+          margin-top: 8px;
+          cursor: pointer;
+        ">🔄 Retry</button>
+      </div>
+      <button onclick="hideCameraError()" style="
+        background: none;
+        border: none;
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0;
+        margin-left: 5px;
+      ">×</button>
+    </div>
+  `;
+  
+  document.body.appendChild(errorDiv);
+  
+  // Auto-hide after 10 seconds
+  setTimeout(() => {
+    hideCameraError();
+  }, 10000);
+}
+
+// Hide camera error
+function hideCameraError() {
+  const errorDiv = document.getElementById('cameraError');
+  if (errorDiv) {
+    errorDiv.remove();
+  }
+}
+
+// Retry camera initialization
+function retryCamera() {
+  hideCameraError();
+  dismissCameraDialog();
+  console.log("Retrying camera initialization...");
+  initializeCamera();
+}
+
+// Dismiss camera permission dialog
+function dismissCameraDialog() {
+  const dialog = document.getElementById('cameraPermissionDialog');
+  if (dialog) {
+    dialog.remove();
+  }
+}
+
+    // Enhanced fallback video processing with error handling
+function processVideoFrameEnhanced() {
+  if (!handTrackingActive) return;
+  
+  try {
+    if (hands && cameraVideo.readyState === 4) {
+      hands.send({ image: cameraVideo }).catch(error => {
+        console.error("Hand processing error:", error);
+      });
+    }
+  } catch (error) {
+    console.error("Video frame processing error:", error);
+  }
+  
+  if (handTrackingActive) {
+    requestAnimationFrame(processVideoFrameEnhanced);
+  }
+}
+
+    // Toggle gesture info panel
+    function toggleGestureInfo() {
+      const isVisible = gestureInfo.style.display !== 'none';
+      gestureInfo.style.display = isVisible ? 'none' : 'block';
+    }
+
+    // Mouse/Touch position tracking (for clicking)
+    function updateMousePosition(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      // Always update mouse position for clicking, regardless of hand tracking
+      mouse.x = clientX - rect.left;
+      mouse.y = clientY - rect.top;
+    }
+
+    // Desktop cursor (only when hand tracking is off)
+    if (!isMobile) {
+      document.addEventListener("mousemove", (e) => {
+        if (!handTrackingActive) {
+          cursor.style.left = (e.clientX - 10) + 'px';
+          cursor.style.top = (e.clientY - 10) + 'px';
+          cursor.style.display = 'block';
+          updateMousePosition(e.clientX, e.clientY);
+        } else {
+          cursor.style.display = 'none';
+          // Still update mouse position for clicking when hand tracking is active
+          updateMousePosition(e.clientX, e.clientY);
+        }
+      });
+
+      document.addEventListener("mousedown", () => {
+        if (!handTrackingActive) {
+          cursor.style.transform = 'scale(1.3)';
+        }
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (!handTrackingActive) {
+          cursor.style.transform = 'scale(1)';
+        }
+      });
+    }
+
+    // Enhanced touch feedback
+    function createTouchRipple(x, y) {
+      const ripple = document.createElement('div');
+      ripple.className = 'touch-ripple';
+      ripple.style.left = (x - 40) + 'px';
+      ripple.style.top = (y - 40) + 'px';
+      ripple.style.width = '80px';
+      ripple.style.height = '80px';
+      document.body.appendChild(ripple);
+      
+      setTimeout(() => {
+        if (document.body.contains(ripple)) {
+          document.body.removeChild(ripple);
+        }
+      }, 800);
+    }
+
+    // Touch event handlers (for clicking)
+    canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      if (touch) {
+        updateMousePosition(touch.clientX, touch.clientY);
+        createTouchRipple(touch.clientX, touch.clientY);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      if (touch) {
+        updateMousePosition(touch.clientX, touch.clientY);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", (e) => {
+      e.preventDefault();
+    }, { passive: false });
+
+    // Audio handling
+    let audioContext = null;
+    let audioInitialized = false;
+
+    function initAudio() {
+      if (!audioInitialized) {
+        try {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          audioInitialized = true;
+        } catch (e) {
+          console.log("Audio not supported");
+        }
+      }
+    }
+
+    function playPopSound() {
+      if (!audioContext) return;
+      
+      try {
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+        
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+      } catch (error) {
+        console.log("Audio playback failed");
+      }
+    }
+
+    // Game functions
+    function createBubble(speedScale) {
+      const colorSet = colors[Math.floor(Math.random() * colors.length)];
+      const baseSize = isMobile ? 35 : 30;
+      
+      return {
+        x: Math.random() * window.innerWidth,
+        y: window.innerHeight + Math.random() * 100,
+        radius: baseSize + Math.random() * 20,
+        speed: (1.5 + Math.random() * 2) * speedScale,
+        color: colorSet,
+        popped: false,
+        alpha: 1,
+        bobOffset: Math.random() * Math.PI * 2,
+        bobSpeed: 0.02 + Math.random() * 0.02
+      };
+    }
+
+    function generateBubbles(count, speedScale = 1) {
+      const adjustedCount = isMobile ? Math.max(5, Math.floor(count * 0.8)) : count;
+      for (let i = 0; i < adjustedCount; i++) {
+        bubbles.push(createBubble(speedScale));
+      }
+    }
+
+    function startGame(selectedMode) {
+      initAudio();
+      initializeCamera();
+      
+      if (countdown) clearInterval(countdown);
+      mode = selectedMode;
+      score = 0;
+      level = 1;
+      bubbles = [];
+      particles = [];
+      isRunning = true;
+      
+      menuOverlay.style.display = 'none';
+      gameUI.style.display = 'flex';
+      
+      updateScoreboard();
+      
+      if (mode === "timer") {
+        timer = 60;
+        updateScoreboard();
+        countdown = setInterval(() => {
+          timer--;
+          updateScoreboard();
+          if (timer <= 0) {
+            endGame("Time's up! Your score: " + score);
+          }
+        }, 1000);
+        generateBubbles(12, 1.2);
+      } else {
+        generateBubbles(mode === "level" ? 8 : 12, 1);
+      }
+    }
+
+    function goHome() {
+      const confirmExit = confirm("Return to main menu? Your progress will be lost.");
+      
+      if (confirmExit) {
+        isRunning = false;
+        
+        if (countdown) {
+          clearInterval(countdown);
+          countdown = null;
+        }
+        
+        saveHighScore();
+        bubbles = [];
+        particles = [];
+        showMenu();
+      }
+    }
+
+    function endGame(message) {
+      isRunning = false;
+      if (countdown) clearInterval(countdown);
+      setTimeout(() => {
+        alert(message);
+        saveHighScore();
+        showMenu();
+      }, 100);
+    }
+
+    function showMenu() {
+      menuOverlay.style.display = 'flex';
+      gameUI.style.display = 'none';
+      updateHighScoreDisplay();
+    }
+
+    function updateScoreboard() {
+      scoreEl.textContent = `Score: ${score}`;
+      levelEl.textContent = `Level: ${mode === "level" ? level : mode === "timer" ? "⏱️" : "∞"}`;
+      timeEl.textContent = `Time: ${mode === "timer" ? timer + "s" : "∞"}`;
+      const stored = localStorage.getItem(highScoreKey) || "0";
+      highScoreEl.textContent = `🏆 High: ${stored}`;
+    }
+
+    function updateHighScoreDisplay() {
+      const stored = localStorage.getItem(highScoreKey) || "0";
+      highScoreDisplayEl.textContent = `🏆 High Score: ${stored}`;
+    }
+
+    function saveHighScore() {
+      const stored = parseInt(localStorage.getItem(highScoreKey) || "0");
+      if (score > stored) {
+        localStorage.setItem(highScoreKey, score.toString());
+        updateScoreboard();
+        updateHighScoreDisplay();
+      }
+    }
+
+    function popEffect(x, y, color) {
+      const particleCount = isMobile ? 8 : 15;
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x, y,
+          dx: Math.cos(i * Math.PI / (particleCount/2)) * (3 + Math.random() * 4),
+          dy: Math.sin(i * Math.PI / (particleCount/2)) * (3 + Math.random() * 4),
+          life: 30,
+          maxLife: 30,
+          color: color.light,
+          size: 4 + Math.random() * 4
+        });
+      }
+    }
+
+    // Game update loop
+    function update() {
+      if (!isRunning) return;
+
+      // Update bubbles
+      for (let i = bubbles.length - 1; i >= 0; i--) {
+        const b = bubbles[i];
+        if (!b.popped) {
+          b.y -= b.speed;
+          b.bobOffset += b.bobSpeed;
+          b.x += Math.sin(b.bobOffset) * 0.8;
+          
+          // Enhanced collision detection
+          const dx = b.x - mouse.x;
+          const dy = b.y - mouse.y;
+          const distanceSquared = dx * dx + dy * dy;
+          const radiusSquared = b.radius * b.radius;
+          
+          if (distanceSquared < radiusSquared) {
+            b.popped = true;
+            score++;
+            playPopSound();
+            updateScoreboard();
+            saveHighScore();
+            popEffect(b.x, b.y, b.color);
+          }
+        } else {
+          b.alpha -= 0.05;
+        }
+
+        if (b.y + b.radius < 0 || b.alpha <= 0) {
+          bubbles.splice(i, 1);
+          if (mode === "freestyle" || mode === "timer") {
+            bubbles.push(createBubble(mode === "freestyle" ? 1 : 1.2));
+          }
+        }
+      }
+
+      // Update particles with enhanced effects
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.dx;
+        p.y += p.dy;
+        p.dx *= 0.98;
+        p.dy *= 0.98;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // Level progression
+      if (mode === "level" && bubbles.length === 0 && isRunning) {
+        level++;
+        if (level > 10) {
+          endGame("🎉 You completed all levels! Final score: " + score);
+        } else {
+          generateBubbles(6 + level * 2, 1 + level * 0.15);
+          updateScoreboard();
+        }
+      }
+    }
+
+    // Enhanced drawing functions
+    function drawBubble(bubble) {
+      const { x, y, radius, color, alpha } = bubble;
+      
+      ctx.globalAlpha = alpha;
+      
+      // Enhanced bubble with multiple gradients
+      const gradient = ctx.createRadialGradient(
+        x - radius * 0.3, y - radius * 0.3, 0,
+        x, y, radius
+      );
+      gradient.addColorStop(0, color.light);
+      gradient.addColorStop(0.4, color.main);
+      gradient.addColorStop(0.8, color.main + "CC");
+      gradient.addColorStop(1, color.main + "80");
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Enhanced highlight with shimmer effect
+      const highlight = ctx.createRadialGradient(
+        x - radius * 0.4, y - radius * 0.4, 0,
+        x - radius * 0.4, y - radius * 0.4, radius * 0.8
+      );
+      highlight.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+      highlight.addColorStop(0.5, "rgba(255, 255, 255, 0.3)");
+      highlight.addColorStop(1, "rgba(255, 255, 255, 0)");
+      
+      ctx.fillStyle = highlight;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Enhanced border with glow
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+      ctx.lineWidth = 3;
+      ctx.shadowColor = "rgba(255, 255, 255, 0.4)";
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      
+      // Draw bubbles
+      bubbles.forEach(drawBubble);
+      
+      // Draw enhanced particles
+      particles.forEach(p => {
+        const alpha = p.life / p.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8 * alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+      
+      ctx.globalAlpha = 1;
+    }
+
+    // Game loop
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+        // Initialize game
+    gameLoop();
+    updateHighScoreDisplay();
+
+    // Prevent scrolling and zooming on mobile
+    document.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', (e) => {
+      e.preventDefault();
+    });
+
+    document.addEventListener('gesturechange', (e) => {
+      e.preventDefault();
+    });
+
+    document.addEventListener('gestureend', (e) => {
+      e.preventDefault();
+    });
+
+    // Enhanced cleanup
+    window.addEventListener('beforeunload', () => {
+      if (cameraVideo.srcObject) {
+        const tracks = cameraVideo.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+      if (camera) {
+        camera.stop();
+      }
+    });
+
+    // Keyboard shortcuts for gesture info
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'g' || e.key === 'G') {
+        toggleGestureInfo();
+      }
+    });
+  </script>
+</body>
+</html>
